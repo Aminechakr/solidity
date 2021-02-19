@@ -59,6 +59,9 @@ SemanticTest::SemanticTest(string const& _filename, langutil::EVMVersion _evmVer
 		{"smoke.test0", simpleSmokeBuiltin},
 		{"smoke.test1", simpleSmokeBuiltin},
 		{"smoke.test2", simpleSmokeBuiltin},
+		{"storage.get", bind(&SemanticTest::builtinStorageGet, this, _1)},
+		{"storage.empty", bind(&SemanticTest::builtinStorageEmpty, this, _1)},
+		{"storage.nonempty", bind(&SemanticTest::builtinStorageNonempty, this, _1)},
 	};
 	m_testHooks = {
 		make_shared<SmokeHook>()
@@ -222,16 +225,7 @@ TestCase::TestResult SemanticTest::runTest(
 			constructed = true;
 		}
 
-		if (test.call().kind == FunctionCall::Kind::Storage)
-		{
-			test.setFailure(false);
-			bytes result(1, !storageEmpty(m_contractAddress));
-			test.setRawBytes(result);
-			soltestAssert(test.call().expectations.rawBytes().size() == 1, "");
-			if (test.call().expectations.rawBytes() != result)
-				success = false;
-		}
-		else if (test.call().kind == FunctionCall::Kind::Constructor)
+		if (test.call().kind == FunctionCall::Kind::Constructor)
 		{
 			if (m_transactionSuccessful == test.call().expectations.failure)
 				success = false;
@@ -466,4 +460,22 @@ std::optional<bytes> SemanticTest::builtinSmokeTest(FunctionCall const& call)
 			result.value() += util::toBigEndian(u256{util::fromHex(parameter.rawString)});
 	}
 	return result;
+}
+
+std::optional<bytes> SemanticTest::builtinStorageGet(FunctionCall const& _call)
+{
+	soltestAssert(_call.arguments.parameters.empty(), "No arguments expected.");
+	return storageEmpty(m_contractAddress) ? bytes(1, uint8_t(true)) : bytes(1, uint8_t(false));
+}
+
+std::optional<bytes> SemanticTest::builtinStorageEmpty(FunctionCall const& _call)
+{
+	soltestAssert(_call.arguments.parameters.empty(), "No arguments expected.");
+	return bytes(1, uint8_t(true));
+}
+
+std::optional<bytes> SemanticTest::builtinStorageNonempty(FunctionCall const& _call)
+{
+	soltestAssert(_call.arguments.parameters.empty(), "No arguments expected.");
+	return bytes(1, uint8_t(false));
 }
