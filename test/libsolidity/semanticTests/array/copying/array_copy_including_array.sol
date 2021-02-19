@@ -37,6 +37,6 @@ contract c {
 // compileViaYul: also
 // ----
 // test() -> 0x02000202
-// storage: empty
+// storage.get -> storage.empty
 // clear() -> 0, 0
-// storage: empty
+// storage.get -> storage.empty
